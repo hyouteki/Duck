@@ -3,18 +3,20 @@ Duck is a [VCS](https://en.wikipedia.org/wiki/Version_control) built from scratc
 
 > **IMPORTANT**: Still in development
 
-## Duck is planned to be
-- [x] initialize
+## Duck is planned to have support for
+- [x] initialization
 - [ ] commit
-- [ ] go back and forth between commits
+- [ ] going back and forth between commits
 - [ ] compression & decompression in files
-- [ ] branch
-- [ ] merge
+- [ ] branching
+- [ ] merging between branches
 - [ ] executable/python module integration
-- [ ] add support for TODOs and ISSUEs
+- [ ] TODOs and ISSUEs
 
 ## Duck log structure
 ```
+.duck
+|
 |___ commits
 |   |___ init
 |   |___ commit-1
