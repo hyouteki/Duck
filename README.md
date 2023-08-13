@@ -3,7 +3,7 @@ Duck is a [VCS](https://en.wikipedia.org/wiki/Version_control) built from scratc
 > **IMPORTANT**: Still in development
 
 ## Duck is planned to be
-- [ ] initialize
+- [x] initialize
 - [ ] commit
 - [ ] go back and forth between commits
 - [ ] compression & decompression in files
@@ -11,19 +11,27 @@ Duck is a [VCS](https://en.wikipedia.org/wiki/Version_control) built from scratc
 - [ ] merge
 - [ ] executable/python module integration
 
-## Log structure
+## Duck log structure
 ```
-|___ head
-|___ commit timeline
-|___ commit sha
-    |___ message
-    |___ files
-        |___ new
-        |___ old
-        |___ changes
-            |___ del
-            |___ add
+|___ commits
+|   |___ init
+|   |___ commit-1
+|   |___ ...
+|
+|___ duck.log.json
+    |___ head
+    |___ commit timeline
+    |___ commit sha
+    	|___ message
+    	|___ files
+            |___ new
+            |___ old
+            |___ changes
+            	|___ del
+            	|___ add
 ```
+- init: initial commited files
+- commits: stores files that are either newly added or deleted in that commit
 - head: name of the latest commit
 - timeline: stores the sequence of commits (sha)
 - sha: sha of that particular commit
