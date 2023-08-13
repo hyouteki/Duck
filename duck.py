@@ -2,10 +2,13 @@ from json import dump
 from sys import argv
 from termcolor import colored
 from shutil import rmtree
-from os import getcwd, mkdir, listdir
+from os import getcwd, mkdir, listdir, path
+import typer
 
 LOG_FILE_NAME = "duck.log.json"
+PATH = getcwd()
 LOG = dict()
+app = typer.Typer()
 
 def get_file_log(original_file_path, updated_file_path):
     with open(original_file_path, "r") as original:
@@ -60,57 +63,53 @@ def get_file_log(original_file_path, updated_file_path):
             file_log["add"] = add_log
             return file_log
 
+"""
 file_log = get_file_log("original.txt", "testadd.txt")
 LOG["original.txt"] = file_log
 
 with open(LOG_FILE_NAME, 'w') as log:
     dump(LOG, log)
+"""
 
-def help():
-    print(colored("""$ python duck.py <command> <flags> <arguments>
-Commands:
-    help  : help
-    init  : initializes the duck VCS
-    commit: commits the change to duck log""", "blue"))
-
-def init():
-    duck_file = getcwd()+"//.duck/"
+@app.command()
+def init(path: str = PATH, indent: bool = False):
+    duck_file = f"{path}//.duck/"
     try:
         rmtree(duck_file, ignore_errors=False, onerror=None)
     except:
         pass
-    duck_log_file_path = duck_file+"//"+LOG_FILE_NAME
+    duck_log_file_path = f"{duck_file}//{LOG_FILE_NAME}"
     mkdir(duck_file)
     log_file = dict()
-    log_file["latest commit"] = "init"
+    log_file["head"] = "init"
+    old = listdir(path)
+    files = dict()
+    files["old"] = old
     init = dict()
-    init["files"] = listdir(getcwd())
+    init["files"] = listdir(path)
     init["message"] = "initial commit"
     commits = dict()
     commits["init"] = init
     log_file["commits"] = commits
     with open(duck_log_file_path, 'w') as log:
-        dump(log_file, log)
-    
-def commit():
-    assert False, "Yet to implement `commit`"
+        if indent:
+            dump(log_file, log, indent = 4)
+        else:
+            dump(log_file, log)
+
+@app.command()
+def commit(path = PATH):
+    duck_log_file_path = f"{path}//.duck//{LOG_FILE_NAME}"
+    try:
+        with open(duck_log_file_path, "a"):
+            pass
+    except:
+        error("ERROR: First init the repository using `python duck.py init`")
 
 def error(message):
     print(colored(message, "red"))
     print(colored("INFO : Do `python duck.py help`", "blue"))
     exit(1)
-    
-def main():
-    if len(argv) < 2:
-        error("ERROR: Invalid terminal command")
-    command = argv[1]
-    if command == "help":
-        help()
-    elif command == "init":
-        init()
-    elif command == "commit":
-        commit()
-    else:
-        error("ERROR: Invalid command found")
-    
-main()
+
+if __name__ == "__main__":
+    app()
