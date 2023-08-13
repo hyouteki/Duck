@@ -1,8 +1,9 @@
-## File structure
-
-|__ commit sha<br>
-|   |__ message<br>
-|   |__ logs<br>
-|      |__ file<br>
-|      	  |__ del<br>
-|	  |__ add<br>
+## Log structure
+```
+|___ commit sha
+    |___ message
+    |___ logs
+        |___ files
+            |___ del
+            |___ add
+```
