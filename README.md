@@ -1,3 +1,4 @@
+# 🦆 Duck
 Duck is a [VCS](https://en.wikipedia.org/wiki/Version_control) built from scratch in Python. Duck stores commits/logs in JSON format. 
 
 > **IMPORTANT**: Still in development
