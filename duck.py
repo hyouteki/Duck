@@ -1,6 +1,10 @@
 from json import dump
+from sys import argv
+from termcolor import colored
+from shutil import rmtree
+from os import getcwd, mkdir, listdir
 
-LOG_FILE_NAME = "duck_log.json"
+LOG_FILE_NAME = "duck.log.json"
 LOG = dict()
 
 def get_file_log(original_file_path, updated_file_path):
@@ -32,16 +36,16 @@ def get_file_log(original_file_path, updated_file_path):
                 else:
                     ptr_up -= 1
             file_log = dict()
-            del_log = []
+            del_log = dict()
             ptr_cm = 0
             for i in range(len_or):
                 if ptr_cm == len(common):
-                    del_log.append(i)
+                    del_log[i] = file_or[i]
                     continue
                 if file_or[i] == common[ptr_cm]:
                     ptr_cm += 1
                 else:
-                    del_log.append(i)
+                    del_log[i] = file_or[i]
             file_log["del"] = del_log
             add_log = dict()
             ptr_cm = 0
@@ -61,3 +65,52 @@ LOG["original.txt"] = file_log
 
 with open(LOG_FILE_NAME, 'w') as log:
     dump(LOG, log)
+
+def help():
+    print(colored("""$ python duck.py <command> <flags> <arguments>
+Commands:
+    help  : help
+    init  : initializes the duck VCS
+    commit: commits the change to duck log""", "blue"))
+
+def init():
+    duck_file = getcwd()+"//.duck/"
+    try:
+        rmtree(duck_file, ignore_errors=False, onerror=None)
+    except:
+        pass
+    duck_log_file_path = duck_file+"//"+LOG_FILE_NAME
+    mkdir(duck_file)
+    log_file = dict()
+    log_file["latest commit"] = "init"
+    init = dict()
+    init["files"] = listdir(getcwd())
+    init["message"] = "initial commit"
+    commits = dict()
+    commits["init"] = init
+    log_file["commits"] = commits
+    with open(duck_log_file_path, 'w') as log:
+        dump(log_file, log)
+    
+def commit():
+    assert False, "Yet to implement `commit`"
+
+def error(message):
+    print(colored(message, "red"))
+    print(colored("INFO : Do `python duck.py help`", "blue"))
+    exit(1)
+    
+def main():
+    if len(argv) < 2:
+        error("ERROR: Invalid terminal command")
+    command = argv[1]
+    if command == "help":
+        help()
+    elif command == "init":
+        init()
+    elif command == "commit":
+        commit()
+    else:
+        error("ERROR: Invalid command found")
+    
+main()
