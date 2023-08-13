@@ -3,7 +3,7 @@ from sys import argv
 from termcolor import colored
 from shutil import rmtree, copyfile
 from os import getcwd, mkdir, listdir
-from os.path import isfile, join
+from os.path import isfile, join, exists
 import typer
 
 LOG_FILE_NAME = "duck.log.json"
@@ -85,6 +85,8 @@ def get_file_log(original_file_path, updated_file_path):
 
 @app.command()
 def init(path: str = PATH, indent: bool = False):
+    if not exists(path):
+        error("ERROR: Invalid path found", info=False)
     duck_dir = join(path, ".duck")
     try:
         rmtree(duck_dir, ignore_errors=False, onerror=None)
@@ -123,18 +125,19 @@ def init(path: str = PATH, indent: bool = False):
             copyfile(original_path, copied_path)
 
 @app.command()
-def commit(path = PATH):
+def commit(path: str = PATH, indent: bool = False):
     duck_log_file_path = join(join(path, ".duck"), LOG_FILE_NAME)
     try:
         with open(duck_log_file_path, "a"):
             pass
     except:
         error("ERROR: First init the repository using `python duck.py init`")
-    assert False, "Commit; not yet implemented"
+    
 
-def error(message):
+def error(message, info=True):
     print(colored(message, "red"))
-    print(colored("INFO : Do `python duck.py help`", "blue"))
+    if info:
+        print(colored("INFO : Do `python duck.py --help`", "blue"))
     exit(1)
 
 if __name__ == "__main__":
