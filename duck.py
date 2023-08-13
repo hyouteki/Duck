@@ -1,4 +1,4 @@
-from json import dump
+from json import dump, load
 from sys import argv
 from termcolor import colored
 from shutil import rmtree, copyfile
@@ -132,7 +132,11 @@ def commit(path: str = PATH, indent: bool = False):
             pass
     except:
         error("ERROR: First init the repository using `python duck.py init`")
-    
+    duck_dir_path = join(path, ".duck")
+    duck_log_file_path = join(duck_dir_path, LOG_FILE_NAME)
+    with open(duck_log_file_path, "r") as file:
+        log_file = load(file)
+        
 
 def error(message, info=True):
     print(colored(message, "red"))
