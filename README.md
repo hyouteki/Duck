@@ -8,8 +8,10 @@ Duck is a [VCS](https://en.wikipedia.org/wiki/Version_control) built from scratc
 - [ ] commit
 - [ ] going back and forth between commits
 - [ ] compression & decompression in files
+- [ ] making timeline a tree structure
 - [ ] branching
 - [ ] merging between branches
+- [ ] recursive handling of subdirectories
 - [ ] executable/python module integration
 - [ ] TODOs and ISSUEs
 
@@ -19,13 +21,13 @@ Duck is a [VCS](https://en.wikipedia.org/wiki/Version_control) built from scratc
 |
 |___ commits
 |   |___ init
-|   |___ commit-1
+|   |___ commit number 1
 |   |___ ...
 |
 |___ duck.log.json
     |___ head
     |___ commit timeline
-    |___ commit sha
+    |___ commit SHA
     	|___ message
     	|___ files
             |___ new
@@ -34,18 +36,20 @@ Duck is a [VCS](https://en.wikipedia.org/wiki/Version_control) built from scratc
             	|___ del
             	|___ add
 ```
-- init: initial commited files
-- commits: stores files that are either newly added or deleted in that commit
-- head: name of the latest commit
-- timeline: stores the sequence of commits (sha)
-- sha: sha of that particular commit
-- message: commit message
-- files: logs of changes done in that commit
-- new: list of newly added files
-- old: list of deleted files
-- changes: logs of changes in existing files
-- del: list of deleted lines in that particular file
-- add: list of newly added lines in that particular file
+| name         | type         | description                                                                                                |
+| ------------ | ------------ | ---------------------------------------------------------------------------------------------------------- |
+| init         | subdirectory | initially commited files                                                                                   |
+| commits      | subdirectory | stores subdirectories which contain files that are either newly added or deleted in that particular commit |
+| head         | string       | SHA of the latest commit                                                                                   |
+| timeline     | linked list  | stores the sequence of commits (SHA)                                                                       |
+| SHA          | string       | SHA of that particular commit                                                                              |
+| message      | string       | commit message                                                                                             |
+| files        | JSON array   | logs of changes done in that commit                                                                        |
+| new          | array        |  list of newly added files                                                                                 |
+| old          | array        | list of deleted files                                                                                      |
+| changes      | json         |  logs of changes in existing files                                                                         |
+| del          | array        | list of deleted lines in that particular file                                                              |
+| add          | array        | list of newly added lines in that particular file                                                          |
 
 ## TODO: Add documentation
 
