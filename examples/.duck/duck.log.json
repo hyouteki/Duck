@@ -1,8 +1,9 @@
 {
-    "head": "commit-1",
+    "head": "commit-2",
     "timeline": [
         "init",
-        "commit-1"
+        "commit-1",
+        "commit-2"
     ],
     "commits": {
         "init": {
@@ -19,14 +20,39 @@
         "commit-1": {
             "message": "hello",
             "files": {
-                "new": [],
+                "new": [
+                    "dudu.txt~",
+                    "dudu.txt",
+                    "testadd.txt",
+                    "original.txt"
+                ],
                 "old": [],
                 "changes": {
-                    "original.txt": {
+                    "testadd.txt": {
                         "del": {},
                         "add": {}
                     },
+                    "original.txt": {
+                        "del": {},
+                        "add": {}
+                    }
+                }
+            }
+        },
+        "commit-2": {
+            "message": "hello",
+            "files": {
+                "new": [],
+                "old": [
+                    "dudu.txt",
+                    "dudu.txt~"
+                ],
+                "changes": {
                     "testadd.txt": {
+                        "del": {},
+                        "add": {}
+                    },
+                    "original.txt": {
                         "del": {},
                         "add": {}
                     }

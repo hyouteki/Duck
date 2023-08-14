@@ -170,14 +170,13 @@ def init(path: str = PATH, indent: bool = False):
 
 @app.command()
 def commit(message: str, path: str = PATH, indent: bool = False):
-    duck_log_file_path = join(join(path, ".duck"), LOG_FILE_NAME)
+    duck_dir_path = join(path, ".duck")
+    duck_log_file_path = join(duck_dir_path, LOG_FILE_NAME)
     try:
         with open(duck_log_file_path, "a"):
             pass
     except:
         error("ERROR: First init the repository using `python duck.py init`")  
-    duck_dir_path = join(path, ".duck")
-    duck_log_file_path = join(duck_dir_path, LOG_FILE_NAME)
     with open(duck_log_file_path, "r") as file:
         log_file = load(file)
     head = log_file[HEAD]
@@ -190,6 +189,9 @@ def commit(message: str, path: str = PATH, indent: bool = False):
     new_files = []
     old_files = []
     change_files = dict()
+    commit_name = f"commit-{len(timeline)}"
+    this_commit_dir_path = join(join(duck_dir_path, COMMITS), commit_name)
+    mkdir(this_commit_dir_path)
     for file in itr_files:
         if file in this_files:
             if file in head_files:
@@ -198,9 +200,11 @@ def commit(message: str, path: str = PATH, indent: bool = False):
                     change_files[file] = get_file_log(apply_commit_to_file(file, head, path), this_file_lines)
             else:
                 new_files.append(file)
+                original_path = join(path, file)
+                copied_path = join(this_commit_dir_path, file)
+                copyfile(original_path, copied_path)
         elif file in head_files:
             old_files.append(file)
-    commit_name = f"commit-{len(timeline)}"
     log_file[TIMELINE].append(commit_name)
     log_file[HEAD] = commit_name
     this_commit = dict()
