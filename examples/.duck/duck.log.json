@@ -1,8 +1,8 @@
 {
-    "head": "1",
+    "head": "commit-1",
     "timeline": [
         "init",
-	"1"
+        "commit-1"
     ],
     "commits": {
         "init": {
@@ -10,26 +10,28 @@
                 "new": [
                     "original.txt",
                     "testadd.txt"
-                ]
+                ],
+                "old": [],
+                "changes": {}
             },
             "message": "initial commit"
         },
-	"1": {
-	    "files": {
-		"new": [],
-		"old": [],
-		"changes": {
-		    "original.txt": {
-			"del": {
-			    "2": "ln\n"
-			},
-			"add": {
-			    "2": "very very 69\n"
-			}
-		    }
-		}
-	    },
-	    "message": "hardcoded commit" 
-	}
+        "commit-1": {
+            "message": "hello",
+            "files": {
+                "new": [],
+                "old": [],
+                "changes": {
+                    "original.txt": {
+                        "del": {},
+                        "add": {}
+                    },
+                    "testadd.txt": {
+                        "del": {},
+                        "add": {}
+                    }
+                }
+            }
+        }
     }
 }

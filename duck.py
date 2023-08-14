@@ -25,64 +25,62 @@ DEL = "del"
 INIT = "init"
 INITIAL_COMMIT = "initial commit"
 
-def get_file_log(original_file_path, updated_file_path):
-    with open(original_file_path, "r") as original:
-        with open(updated_file_path, "r") as updated:
-            file_or = original.readlines()
-            file_up = updated.readlines()
-            len_or, len_up = len(file_or), len(file_up)
+def get_file_log(original_file_lines, updated_file_lines):
+    file_or = original_file_lines
+    file_up = updated_file_lines
+    len_or, len_up = len(file_or), len(file_up)
+    
+    # finding longest common subsequence between `or` & `up` file
+    dp = [[0 for j in range(len_up+1)] for i in range(len_or+1)]
+    for i in range(len_or+1):
+        for j in range(len_up+1):
+            if i == 0 or j == 0:
+                continue
+            if (file_or[i-1] == file_up[j-1]):
+                dp[i][j] = 1+dp[i-1][j-1]
+            else:
+                dp[i][j] = max(dp[i-1][j], dp[i][j-1])
+                
+    common = ["" for i in range(dp[len_or][len_up])]
+    ptr_or, ptr_up, ptr_cm = len_or, len_up, dp[len_or][len_up]-1
+    while ptr_or > 0 and ptr_up > 0 and ptr_cm >= 0:
+        if file_or[ptr_or-1] == file_up[ptr_up-1]:
+            common[ptr_cm] = file_or[ptr_or-1]
+            ptr_cm -= 1
+            ptr_or -= 1
+            ptr_up -= 1
+        elif dp[ptr_or-1][ptr_up] > dp[ptr_or][ptr_up-1]:
+            ptr_or -= 1
+        else:
+            ptr_up -= 1
             
-            # finding longest common subsequence between `or` & `up` file
-            dp = [[0 for j in range(len_up+1)] for i in range(len_or+1)]
-            for i in range(len_or+1):
-                for j in range(len_up+1):
-                    if i == 0 or j == 0:
-                        continue
-                    if (file_or[i-1] == file_up[j-1]):
-                        dp[i][j] = 1+dp[i-1][j-1]
-                    else:
-                        dp[i][j] = max(dp[i-1][j], dp[i][j-1])
-                        
-            common = ["" for i in range(dp[len_or][len_up])]
-            ptr_or, ptr_up, ptr_cm = len_or, len_up, dp[len_or][len_up]-1
-            while ptr_or > 0 and ptr_up > 0 and ptr_cm >= 0:
-                if file_or[ptr_or-1] == file_up[ptr_up-1]:
-                    common[ptr_cm] = file_or[ptr_or-1]
-                    ptr_cm -= 1
-                    ptr_or -= 1
-                    ptr_up -= 1
-                elif dp[ptr_or-1][ptr_up] > dp[ptr_or][ptr_up-1]:
-                    ptr_or -= 1
-                else:
-                    ptr_up -= 1
-                    
-            file_log = dict()
-            
-            del_log = dict()
-            ptr_cm = 0
-            for i in range(len_or):
-                if ptr_cm == len(common):
-                    del_log[i] = file_or[i]
-                    continue
-                if file_or[i] == common[ptr_cm]:
-                    ptr_cm += 1
-                else:
-                    del_log[i] = file_or[i]
-            file_log[DEL] = del_log
-            
-            add_log = dict()
-            ptr_cm = 0
-            for i in range(len_up):
-                if ptr_up == len(common):
-                    add_log[i] = file_up[i]
-                    continue
-                if file_or[i] == common[ptr_cm]:
-                    ptr_cm += 1
-                else:
-                    add_log[i] = file_up[i]
-            file_log[ADD] = add_log
-            
-            return file_log
+    file_log = dict()
+    
+    del_log = dict()
+    ptr_cm = 0
+    for i in range(len_or):
+        if ptr_cm == len(common):
+            del_log[i] = file_or[i]
+            continue
+        if file_or[i] == common[ptr_cm]:
+            ptr_cm += 1
+        else:
+            del_log[i] = file_or[i]
+    file_log[DEL] = del_log
+    
+    add_log = dict()
+    ptr_cm = 0
+    for i in range(len_up):
+        if ptr_up == len(common):
+            add_log[i] = file_up[i]
+            continue
+        if file_or[i] == common[ptr_cm]:
+            ptr_cm += 1
+        else:
+            add_log[i] = file_up[i]
+    file_log[ADD] = add_log
+    
+    return file_log
 
 def check_file_exist_in_this_commit(file_name, commit_sha, log_file, path: str = PATH):
     this_commit_files = log_file[COMMITS][commit_sha][FILES]
@@ -150,6 +148,8 @@ def init(path: str = PATH, indent: bool = False):
     log_file[TIMELINE] = [INIT]
     files = dict()
     files[NEW] = [file for file in listdir(path) if isfile(join(path, file))]
+    files[OLD] = []
+    files[CHANGES] = dict()
     init = dict()
     init[FILES] = files
     init[MESSAGE] = INITIAL_COMMIT
@@ -169,34 +169,51 @@ def init(path: str = PATH, indent: bool = False):
             copyfile(original_path, copied_path)
 
 @app.command()
-def commit(path: str = PATH, indent: bool = False):
+def commit(message: str, path: str = PATH, indent: bool = False):
     duck_log_file_path = join(join(path, ".duck"), LOG_FILE_NAME)
     try:
         with open(duck_log_file_path, "a"):
             pass
     except:
-        error("ERROR: First init the repository using `python duck.py init`")
-        
-    print(apply_commit_to_file("original.txt", "1", path))  
-    return
+        error("ERROR: First init the repository using `python duck.py init`")  
     duck_dir_path = join(path, ".duck")
     duck_log_file_path = join(duck_dir_path, LOG_FILE_NAME)
     with open(duck_log_file_path, "r") as file:
         log_file = load(file)
     head = log_file[HEAD]
+    timeline = log_file[TIMELINE]
     commit_head = log_file[COMMITS][head]
     this_files = [file for file in listdir(path) if isfile(join(path, file))]
+    head_files = commit_head[FILES][NEW]
+    head_files.extend([file for file in commit_head[FILES][CHANGES]])
+    itr_files = set(this_files+head_files)
+    new_files = []
     old_files = []
-    if NEW in log_file[COMMITS][head][FILES]:
-        old_files.extend(log_file[COMMITS][head][FILES][NEW])
-    if CHANGES in log_file[COMMITS][head][FILES]:
-        old_files.extend([file for file in log_file[COMMITS][head][FILES][CHANGES]])
-    if OLD in log_file[COMMITS][head][FILES]:
-        old_files.extend(log_file[COMMITS][head][FILES][OLD])
-    for file in this_files:
-        if file in old_files:
-            #  file_change_log = get_file_log(original_file_path, )
-            pass
+    change_files = dict()
+    for file in itr_files:
+        if file in this_files:
+            if file in head_files:
+                with open(join(path, file)) as f:
+                    this_file_lines = f.readlines()
+                    change_files[file] = get_file_log(apply_commit_to_file(file, head, path), this_file_lines)
+            else:
+                new_files.append(file)
+        elif file in head_files:
+            old_files.append(file)
+    commit_name = f"commit-{len(timeline)}"
+    log_file[TIMELINE].append(commit_name)
+    log_file[HEAD] = commit_name
+    this_commit = dict()
+    this_commit[MESSAGE] = message
+    this_commit_files = dict()
+    this_commit_files[NEW] = new_files
+    this_commit_files[OLD] = old_files
+    this_commit_files[CHANGES] = change_files
+    this_commit[FILES] = this_commit_files
+    log_file[COMMITS][commit_name] = this_commit
+    with open(duck_log_file_path, "w") as file:
+        dump(log_file, file, indent = 4 if indent else 0)
+    
     
 def error(message, info=True):
     print(colored(message, "red"))
