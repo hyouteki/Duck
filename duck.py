@@ -19,6 +19,7 @@ FILES = "files"
 COMMITS = "commits"
 NEW = "new"
 OLD = "old"
+CHANGES = "changes"
 ADD = "add"
 DEL = "del"
 INIT = "init"
@@ -83,6 +84,50 @@ def get_file_log(original_file_path, updated_file_path):
             
             return file_log
 
+def check_file_exist_in_this_commit(file_name, commit_sha, log_file, path: str = PATH):
+    this_commit_files = log_file[COMMITS][commit_sha][FILES]
+    flag = file_name in [file for file in this_commit_files[CHANGES]]
+    flag = flag or file_name in this_commit_files[NEW]
+    return flag
+        
+def apply_commit_to_file(file_name, commit_sha, path: str = PATH):
+    duck_dir_path = join(path, ".duck")
+    duck_log_dir_path = join(duck_dir_path, LOG_FILE_NAME)
+    duck_commits_dir_path = join(duck_dir_path, COMMITS)
+    with open(duck_log_dir_path, "r") as file:
+        log_file = load(file)
+    timeline = log_file[TIMELINE]
+    
+    # finding first commit of this file
+    first_commit_id = -1
+    this_commit_id = -1
+    for i in range(len(timeline)-1, -1, -1):
+        if timeline[i] == commit_sha:
+            first_commit_id = i
+            this_commit_id = i
+        if first_commit_id == -1:
+            continue
+        if check_file_exist_in_this_commit(file_name, commit_sha, log_file, path):
+            first_commit_id = i
+        else:
+            break
+        
+    assert first_commit_id != -1, "`file_name` does not exist in any commit"
+
+    with open(join(join(duck_commits_dir_path, timeline[first_commit_id]), file_name)) as file:
+        lines = file.readlines()
+        # only need to apply changes
+        for i in range(first_commit_id+1, this_commit_id+1):
+            cur_commit_sha = timeline[i]
+            file_changelog = log_file[COMMITS][cur_commit_sha][FILES][CHANGES][file_name]
+            # converting to common file
+            common = [lines[i] for i in range(len(lines)) if str(i) not in file_changelog[DEL]]
+            for change in file_changelog[ADD]:
+                common.insert(int(change), file_changelog[ADD][change])
+            lines = common
+            
+    return lines
+            
 @app.command()
 def init(path: str = PATH, indent: bool = False):
     if not exists(path):
@@ -103,9 +148,8 @@ def init(path: str = PATH, indent: bool = False):
     log_file = dict()
     log_file[HEAD] = INIT
     log_file[TIMELINE] = [INIT]
-    old = listdir(path)
     files = dict()
-    files[OLD] = old
+    files[NEW] = [file for file in listdir(path) if isfile(join(path, file))]
     init = dict()
     init[FILES] = files
     init[MESSAGE] = INITIAL_COMMIT
@@ -132,12 +176,28 @@ def commit(path: str = PATH, indent: bool = False):
             pass
     except:
         error("ERROR: First init the repository using `python duck.py init`")
+        
+    print(apply_commit_to_file("original.txt", "1", path))  
+    return
     duck_dir_path = join(path, ".duck")
     duck_log_file_path = join(duck_dir_path, LOG_FILE_NAME)
     with open(duck_log_file_path, "r") as file:
         log_file = load(file)
-        
-
+    head = log_file[HEAD]
+    commit_head = log_file[COMMITS][head]
+    this_files = [file for file in listdir(path) if isfile(join(path, file))]
+    old_files = []
+    if NEW in log_file[COMMITS][head][FILES]:
+        old_files.extend(log_file[COMMITS][head][FILES][NEW])
+    if CHANGES in log_file[COMMITS][head][FILES]:
+        old_files.extend([file for file in log_file[COMMITS][head][FILES][CHANGES]])
+    if OLD in log_file[COMMITS][head][FILES]:
+        old_files.extend(log_file[COMMITS][head][FILES][OLD])
+    for file in this_files:
+        if file in old_files:
+            #  file_change_log = get_file_log(original_file_path, )
+            pass
+    
 def error(message, info=True):
     print(colored(message, "red"))
     if info:

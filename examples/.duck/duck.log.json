@@ -1,18 +1,35 @@
 {
-    "head": "init",
+    "head": "1",
     "timeline": [
-        "init"
+        "init",
+	"1"
     ],
     "commits": {
         "init": {
             "files": {
-                "old": [
-                    ".duck",
+                "new": [
                     "original.txt",
                     "testadd.txt"
                 ]
             },
             "message": "initial commit"
-        }
+        },
+	"1": {
+	    "files": {
+		"new": [],
+		"old": [],
+		"changes": {
+		    "original.txt": {
+			"del": {
+			    "2": "ln\n"
+			},
+			"add": {
+			    "2": "very very 69\n"
+			}
+		    }
+		}
+	    },
+	    "message": "hardcoded commit" 
+	}
     }
 }
