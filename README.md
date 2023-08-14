@@ -5,7 +5,7 @@ Duck is a [VCS](https://en.wikipedia.org/wiki/Version_control) built from scratc
 
 ## Duck is planned to have support for
 - [x] initialization
-- [ ] commit
+- [x] commit
 - [ ] going back and forth between commits
 - [ ] compression & decompression in files
 - [ ] making timeline a tree structure
