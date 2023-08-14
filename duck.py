@@ -22,7 +22,7 @@ OLD = "old"
 CHANGES = "changes"
 ADD = "add"
 DEL = "del"
-INIT = "init"
+INIT = "commit-init"
 INITIAL_COMMIT = "initial commit"
 
 def get_file_log(original_file_lines, updated_file_lines):
@@ -137,10 +137,10 @@ def init(path: str = PATH, indent: bool = False):
         pass
     
     duck_log_file_path = join(duck_dir, LOG_FILE_NAME)
-    commits_dir = join(duck_dir, "commits")
+    commits_dir = join(duck_dir, COMMITS)
     mkdir(duck_dir)
     mkdir(commits_dir)
-    init_commit_dir = join(commits_dir, "init")
+    init_commit_dir = join(commits_dir, INIT)
     mkdir(init_commit_dir)
     
     log_file = dict()
@@ -162,11 +162,15 @@ def init(path: str = PATH, indent: bool = False):
         dump(log_file, log, indent = 4 if indent else 0)
 
     # copying files
+    count_files = 0
     for file in listdir(path):
         if isfile(join(path, file)):
             original_path = join(path, file)
             copied_path = join(init_commit_dir, file)
             copyfile(original_path, copied_path)
+            count_files += 1
+
+    print(colored(f"COOKIE: Initialized {count_files} files in directory `{path}`", "blue"))
 
 @app.command()
 def commit(message: str, path: str = PATH, indent: bool = False):
@@ -218,11 +222,17 @@ def commit(message: str, path: str = PATH, indent: bool = False):
     with open(duck_log_file_path, "w") as file:
         dump(log_file, file, indent = 4 if indent else 0)
     
+    print(colored(f"COOKIE: Commited in directory `{path}`", "blue"))
+    print(colored("COOKIE: [Deleted, Added, Updated] files", "blue"), end=" = [")
+    print(colored(len(old_files), "red"), end = ", ")
+    print(colored(len(new_files), "green"), end = ", ")
+    print(colored(len(this_files)-len(old_files)-len(new_files), "dark_grey"), end="")
+    print("]")
     
 def error(message, info=True):
     print(colored(message, "red"))
     if info:
-        print(colored("INFO : Do `python duck.py --help`", "blue"))
+        print(colored("INFO : Do `python duck.py --help`", "magenta"))
     exit(1)
 
 if __name__ == "__main__":

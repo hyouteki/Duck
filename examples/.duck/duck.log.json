@@ -1,12 +1,11 @@
 {
-    "head": "commit-2",
+    "head": "commit-1",
     "timeline": [
-        "init",
-        "commit-1",
-        "commit-2"
+        "commit-init",
+        "commit-1"
     ],
     "commits": {
-        "init": {
+        "commit-init": {
             "files": {
                 "new": [
                     "original.txt",
@@ -20,33 +19,8 @@
         "commit-1": {
             "message": "hello",
             "files": {
-                "new": [
-                    "dudu.txt~",
-                    "dudu.txt",
-                    "testadd.txt",
-                    "original.txt"
-                ],
-                "old": [],
-                "changes": {
-                    "testadd.txt": {
-                        "del": {},
-                        "add": {}
-                    },
-                    "original.txt": {
-                        "del": {},
-                        "add": {}
-                    }
-                }
-            }
-        },
-        "commit-2": {
-            "message": "hello",
-            "files": {
                 "new": [],
-                "old": [
-                    "dudu.txt",
-                    "dudu.txt~"
-                ],
+                "old": [],
                 "changes": {
                     "testadd.txt": {
                         "del": {},
