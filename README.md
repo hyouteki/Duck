@@ -54,5 +54,6 @@ Duck is a [VCS](https://en.wikipedia.org/wiki/Version_control) built from scratc
 ## TODO: Add documentation
 
 ## External modules required
-- Typer
-- Termcolor
+- typer
+- termcolor
+- inquirer

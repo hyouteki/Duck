@@ -5,6 +5,7 @@ from shutil import rmtree, copyfile
 from os import getcwd, mkdir, listdir
 from os.path import isfile, join, exists
 import typer
+import inquirer
 
 LOG_FILE_NAME = "duck.log.json"
 PATH = getcwd()
@@ -177,7 +178,7 @@ def commit(message: str, path: str = PATH, indent: bool = False):
     duck_dir_path = join(path, ".duck")
     duck_log_file_path = join(duck_dir_path, LOG_FILE_NAME)
     try:
-        with open(duck_log_file_path, "a"):
+        with open(duck_log_file_path, "r"):
             pass
     except:
         error("ERROR: First init the repository using `python duck.py init`")  
@@ -228,6 +229,60 @@ def commit(message: str, path: str = PATH, indent: bool = False):
     print(colored(len(new_files), "green"), end = ", ")
     print(colored(len(this_files)-len(old_files)-len(new_files), "dark_grey"), end="")
     print("]")
+
+@app.command()
+def rollback(commit: str = "", path: str = PATH):
+    duck_dir_path = join(path, ".duck")
+    log_file_path = join(duck_dir_path, LOG_FILE_NAME)
+    commits_dir_path = join(duck_dir_path, COMMITS)
+    try:
+        with open(log_file_path, "r") as file:
+            pass             
+    except:
+        error("ERROR: First init the repository using `python duck.py init`")
+    with open(log_file_path, "r") as file:
+        log_file = load(file)
+    all_commits = log_file[COMMITS]
+    if commit == "":
+        commits = [
+            inquirer.List(
+                "commit",
+                message="Select commit for info",
+                choices=log_file[TIMELINE],
+            ),
+        ]
+        answers = inquirer.prompt(commits)
+        commit = answers["commit"]
+    elif commit not in log_file[TIMELINE]:
+        error("ERROR: Not a valid commit SHA", info=False)
+   this_commit_files = log_file[COMMITS][commit]
+   # TODO: complete this
+
+@app.command()
+def info(path: str = PATH, commit: str = ""):
+    log_file_path = join(path, ".duck/duck.log.json")
+    try:
+        with open(log_file_path, "r") as file:
+            pass             
+    except:
+        error("ERROR: First init the repository using `python duck.py init`")
+    with open(log_file_path, "r") as file:
+        log_file = load(file)
+        all_commits = log_file[COMMITS]
+        if commit == "":
+            commits = [
+                inquirer.List(
+                    "commit",
+                    message="Select commit for info",
+                    choices=log_file[TIMELINE],
+                ),
+            ]
+            answers = inquirer.prompt(commits)
+            commit = answers["commit"]
+        elif commit not in log_file[TIMELINE]:
+            error("ERROR: Not a valid commit SHA", info=False)
+        # TODO: complete this
+        print(colored(""))
     
 def error(message, info=True):
     print(colored(message, "red"))
