@@ -1,9 +1,8 @@
 {
-    "head": "commit-2",
+    "head": "commit-1",
     "timeline": [
         "commit-init",
-        "commit-1",
-        "commit-2"
+        "commit-1"
     ],
     "commits": {
         "commit-init": {
@@ -18,36 +17,22 @@
             "message": "initial commit"
         },
         "commit-1": {
-            "message": "test_commit",
-            "files": {
-                "new": [
-                    "original.txt",
-                    "testadd.txt"
-                ],
-                "old": [],
-                "changes": {
-                    "original.txt": {
-                        "del": {},
-                        "add": {}
-                    },
-                    "testadd.txt": {
-                        "del": {},
-                        "add": {}
-                    }
-                }
-            }
-        },
-        "commit-2": {
-            "message": "test_commit",
+            "message": "commit test",
             "files": {
                 "new": [],
                 "old": [],
                 "changes": {
-                    "original.txt": {
-                        "del": {},
-                        "add": {}
-                    },
                     "testadd.txt": {
+                        "del": {
+                            "3": "rolahh\n",
+                            "4": "\n",
+                            "5": "temp hell\n"
+                        },
+                        "add": {
+                            "3": "rola"
+                        }
+                    },
+                    "original.txt": {
                         "del": {},
                         "add": {}
                     }

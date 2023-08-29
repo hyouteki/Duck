@@ -22,20 +22,24 @@ OLD = "old"
 CHANGES = "changes"
 ADD = "add"
 DEL = "del"
+COM = "com"
 INIT = "commit-init"
 INITIAL_COMMIT = "initial commit"
 
 
-def get_file_change_log(original_file_lines: list, updated_file_lines: list) -> dict:
+def get_file_change_log(
+    original_file_lines: list, updated_file_lines: list, include_common: bool = False
+) -> dict:
     """
-    @desc
+    @desc\t
         compares updated and original files and spits out the change log
 
-    @params
+    @params\t
         original_file_lines: list of '\n' seperated lines of original file
-        updated_file_lines : list of '\n' seperated lines of updated  file
+        updated_file_lines: list of '\n' seperated lines of updated file
+        include_common: flag for including common lines in change log
 
-    @return
+    @return\t
         log: which is a dict containing list of new/old lines
     """
 
@@ -53,7 +57,7 @@ def get_file_change_log(original_file_lines: list, updated_file_lines: list) -> 
                 dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])
 
     # finding the common lines between both versions of the file
-    common = ["" for i in range(dp[len_or][len_up])]
+    common = ["" for _ in range(dp[len_or][len_up])]
     ptr_or, ptr_up, ptr_cm = len_or, len_up, dp[len_or][len_up] - 1
     while ptr_or > 0 and ptr_up > 0 and ptr_cm >= 0:
         if original_file_lines[ptr_or - 1] == updated_file_lines[ptr_up - 1]:
@@ -71,6 +75,9 @@ def get_file_change_log(original_file_lines: list, updated_file_lines: list) -> 
     #     "del": {(line_number -> line), ...},
     # }
     file_log = dict()
+
+    if include_common:
+        file_log[COM] = common
 
     # dict of deleted lines
     # {(line_number -> line), ...}
@@ -91,10 +98,10 @@ def get_file_change_log(original_file_lines: list, updated_file_lines: list) -> 
     add_log = dict()
     ptr_cm = 0
     for i in range(len_up):
-        if ptr_up == len(common):
+        if i >= len(common):
             add_log[i] = updated_file_lines[i]
             continue
-        if original_file_lines[i] == common[ptr_cm]:
+        if updated_file_lines[i] == common[ptr_cm]:
             ptr_cm += 1
         else:
             add_log[i] = updated_file_lines[i]
@@ -107,15 +114,15 @@ def check_file_exist_in_this_commit(
     file_name: str, commit_sha: str, log_file: dict
 ) -> bool:
     """
-    @desc
+    @desc\t
         checks if a certain file exists in this commit
 
-    @params
+    @params\t
         file_name: name of the file
         commit_sha: sha of the commit
         log_file: log file `.duck/duck.log.json`
 
-    @return
+    @return\t
         log: which is a dict containing list of new/old lines
     """
 
@@ -127,18 +134,18 @@ def check_file_exist_in_this_commit(
 
 def apply_commit_to_file(file_name: str, commit_sha: str, path: str = PATH) -> list:
     """
-    @desc
+    @desc\t
         returns the lines in the file `file_name` during the commit `commit_sha`
 
-    @params
+    @params\t
         file_name: name of the file
         commit_sha: sha of the commit
         path: path the duck repository
 
-    @raises
+    @raises\t
         AssertionError: `file_name` does not exist in any commit
 
-    @return
+    @return\t
         file_lines: list of '\n' seperated lines of the file `file_name`
     """
 
@@ -190,14 +197,14 @@ def apply_commit_to_file(file_name: str, commit_sha: str, path: str = PATH) -> l
 @app.command()
 def init(path: str = PATH, indent: bool = False) -> None:
     """
-    @desc
+    @desc\t
         initializes the directory at the path `path` as the duck repository
 
-    @params
+    @params\t
         path: path of the duck repository
         indent: should indent the log file `.duck/duck.log.json`
 
-    @return
+    @return\t
         None
     """
 
@@ -257,19 +264,19 @@ def init(path: str = PATH, indent: bool = False) -> None:
 @app.command()
 def commit(message: str, path: str = PATH, indent: bool = False) -> None:
     """
-    @desc
+    @desc\t
         commits the current version of the directory at the path `path`
 
-    @params
+    @params\t
         message: commit message
         path: path of the duck repository
         indent: should indent the log file `.duck/duck.log.json`
 
-    @return
+    @return\t
         None
     """
 
-    #TODO(#2): Add support for not commiting if no changes are present
+    # TODO(#2): Add support for not commiting if no changes are present
 
     duck_dir_path = join(path, ".duck")
     duck_log_file_path = join(duck_dir_path, LOG_FILE_NAME)
@@ -328,13 +335,13 @@ def commit(message: str, path: str = PATH, indent: bool = False) -> None:
     with open(duck_log_file_path, "w") as file:
         dump(log_file, file, indent=4 if indent else 0)
 
+    print(colored(f"COOKIE: Commit SHA = {commit_name}", "blue"))
+    print(colored(f"COOKIE: Commit Message = {message}", "blue"))
     print(colored(f"COOKIE: Commited in directory `{path}`", "blue"))
     print(colored("COOKIE: [Deleted, Added, Updated] files", "blue"), end=" = [")
     print(colored(len(old_files), "red"), end=", ")
     print(colored(len(new_files), "green"), end=", ")
-    print(
-        colored(len(this_files) - len(old_files) - len(new_files), "yellow"), end=""
-    )
+    print(colored(len(this_files) - len(old_files) - len(new_files), "yellow"), end="")
     print("]")
 
     return None
@@ -343,31 +350,34 @@ def commit(message: str, path: str = PATH, indent: bool = False) -> None:
 @app.command()
 def rollback(commit_sha: str = "", path: str = PATH) -> None:
     """
-    @desc
+    @desc\t
         rollsback to the version of the directory during a particular commit
 
-    @params
+    @params\t
         commit_sha: sha of the commit
         path: path of the duck repository
         indent: should indent the log file `.duck/duck.log.json`
 
-    @return
+    @return\t
         None
     """
 
-    #TODO(#3): Complete rollback command
+    # TODO(#3): Complete rollback command
 
     duck_dir_path = join(path, ".duck")
     log_file_path = join(duck_dir_path, LOG_FILE_NAME)
     commits_dir_path = join(duck_dir_path, COMMITS)
+
     try:
         with open(log_file_path, "r") as file:
             pass
     except:
         error("ERROR: First init the repository using `python duck.py init`")
+
     with open(log_file_path, "r") as file:
         log_file = load(file)
     all_commits = log_file[COMMITS]
+
     if commit_sha == "":
         commits = [
             inquirer.List(
@@ -386,16 +396,72 @@ def rollback(commit_sha: str = "", path: str = PATH) -> None:
 
 
 @app.command()
+def diff(file_path: str, path: str = PATH) -> None:
+    """
+    @desc\t
+        spits out the difference in the current version of the file with the commited version of the file
+
+    @params\t
+        file_path: name of the file
+        path: path of the duck repository
+
+    @raises\t
+        AssertionError: `file_path` specified does not exist
+
+    @return\t
+        None
+    """
+
+    duck_dir_path = join(path, ".duck")
+    duck_log_file_path = join(duck_dir_path, LOG_FILE_NAME)
+    try:
+        with open(duck_log_file_path, "r"):
+            pass
+    except:
+        error("ERROR: First init the repository using `python duck.py init`")
+
+    with open(duck_log_file_path, "r") as file:
+        log_file = load(file)
+
+    assert exists(join(path, file_path)), "`file_path` specified does not exist"
+
+    with open(join(path, file_path)) as file:
+        cur_file_lines = file.readlines()
+
+    file_change_log = get_file_change_log(
+        original_file_lines=apply_commit_to_file(file_path, log_file[HEAD], path),
+        updated_file_lines=cur_file_lines,
+        include_common=True,
+    )
+
+    com_color = 0
+    del_color = 1
+    add_color = 2
+    color_array = ["white", "red", "green"]
+    symbol_array = [" ", "-", "+"]
+    out = [(com_color, line) for line in file_change_log[COM]]
+    for itr in file_change_log[DEL]:
+        out.insert(itr, (del_color, file_change_log[DEL][itr]))
+    for itr in file_change_log[ADD]:
+        out.insert(itr, (add_color, file_change_log[ADD][itr]))
+
+    for itr in out:
+        line = itr[1].rstrip("\n")
+        print(colored(f"{symbol_array[itr[0]]}\t{line}", color_array[itr[0]]))
+    
+    return None
+
+@app.command()
 def info(path: str = PATH, commit_sha: str = "") -> None:
     """
-    @desc
+    @desc\t
         prints commit info to the console
 
-    @params
+    @params\t
         path: path of the duck repository
         commit_sha: commit_sha
 
-    @return
+    @return\t
         None
     """
 
@@ -423,20 +489,20 @@ def info(path: str = PATH, commit_sha: str = "") -> None:
         elif commit_sha not in log_file[TIMELINE]:
             error("ERROR: Not a valid commit SHA", info=False)
         print(colored(""))
-    
+
     return None
 
 
 def error(message, info=True):
     """
-    @desc
+    @desc\t
         prints error to the console
 
-    @params
+    @params\t
         message: error message
         info: flag for showing info to the console
 
-    @exit
+    @exit\t
         1
     """
 
