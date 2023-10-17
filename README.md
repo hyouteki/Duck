@@ -6,6 +6,9 @@ Duck is a [VCS](https://en.wikipedia.org/wiki/Version_control) built from scratc
 - [x] init
 - [x] commit
 - [x] diff
+- [x] info
+- [x] status
+- [ ] unit test
 - [ ] rollback 
 - [ ] compression & decompression in files
 - [ ] making timeline a tree structure
@@ -53,7 +56,7 @@ Duck is a [VCS](https://en.wikipedia.org/wiki/Version_control) built from scratc
 
 ## Requirements
 ``` console
-pip install typer termcolor inquirer
+pip install typer[all] rich inquirer
 ```
 
 ## TODO: Add documentation

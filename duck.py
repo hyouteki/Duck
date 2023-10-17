@@ -1,5 +1,4 @@
 from json import dump, load
-from termcolor import colored
 from shutil import rmtree, copyfile
 from os import getcwd, mkdir, listdir
 from os.path import isfile, join, exists
@@ -13,6 +12,7 @@ from rich.table import Table
 
 
 LOG_FILE_NAME = "duck.log.json"
+EXECUTABLE = "python duck.py"
 PATH = getcwd()
 LOG = dict()
 app = Typer(rich_markup_mode="rich")
@@ -261,8 +261,8 @@ def init(
             copyfile(originalPath, copiedPath)
             fileCount += 1
 
-    print(
-        colored(f"[COOKIE] Initialized {fileCount} files in directory `{path}`", "blue")
+    richPrint(
+        f"[blue][COOKIE] Initialized {fileCount} files in directory `{path}`[/blue]"
     )
 
     return None
@@ -288,7 +288,7 @@ def commit(
     duckLogFilePath = join(duckDirPath, LOG_FILE_NAME)
 
     if not exists(duckLogFilePath):
-        error(f"[ERROR] First init the repository using `python duck.py init`")
+        error(f"[ERROR] First init the repository using `{EXECUTABLE} init`")
 
     with open(duckLogFilePath, "r") as file:
         duckLogFile = load(file)
@@ -315,9 +315,9 @@ def commit(
         if file in thisFiles:
             if file in headFiles:
                 with open(join(path, file)) as f:
-                    this_file_lines = f.readlines()
+                    thisFileLines = f.readlines()
                     changeFiles[file] = getFileChangeLog(
-                        applyCommitToFile(file, head, path), this_file_lines
+                        applyCommitToFile(file, head, path), thisFileLines
                     )
             else:
                 newFiles.append(file)
@@ -341,14 +341,15 @@ def commit(
     with open(duckLogFilePath, "w") as file:
         dump(duckLogFile, file, indent=4 if indent else 0)
 
-    print(colored(f"[COOKIE] Commit SHA = {commitName}", "blue"))
-    print(colored(f"[COOKIE] Commit Message = {message}", "blue"))
-    print(colored(f"[COOKIE] Commited in directory `{path}`", "blue"))
-    print(colored(f"[COOKIE] [Deleted, Added, Updated] files", "blue"), end=" = [")
-    print(colored(len(oldFiles), "red"), end=", ")
-    print(colored(len(newFiles), "green"), end=", ")
-    print(colored(len(thisFiles) - len(oldFiles) - len(newFiles), "yellow"), end="")
-    print("]")
+    console = Console()
+    commitTable = Table("Commit SHA", commitName)
+    commitTable.add_row("Commit Message", message)
+    commitTable.add_row("Committed in directory", path)
+    commitTable.add_row(
+        "Changed [Deleted, Added, Updated] files",
+        f"[[red]{len(oldFiles)}[/red], [green]{len(newFiles)}[/green], [yellow]{len(thisFiles) - len(oldFiles) - len(newFiles)}[/yellow]",
+    )
+    console.print(commitTable)
 
     return None
 
@@ -379,7 +380,7 @@ def rollback(commit_sha: str = "", path: str = PATH) -> None:
         with open(log_file_path, "r") as file:
             pass
     except:
-        error("ERROR: First init the repository using `python duck.py init`")
+        error(f"ERROR: First init the repository using `{EXECUTABLE} init`")
 
     with open(log_file_path, "r") as file:
         log_file = load(file)
@@ -414,7 +415,7 @@ def diff(
     duckLogFilePath = join(path, ".duck", LOG_FILE_NAME)
 
     if not exists(duckLogFilePath):
-        error("[ERROR] First init the repository using `python duck.py init`")
+        error(f"[ERROR] First init the repository using `{EXECUTABLE} init`")
 
     with open(duckLogFilePath, "r") as file:
         duckLogFile = load(file)
@@ -445,7 +446,9 @@ def diff(
 
     for itr in out:
         line = itr[1].rstrip("\n")
-        print(colored(f"{SymbolArray[itr[0]]}\t{line}", colorArray[itr[0]]))
+        richPrint(
+            f"[{colorArray[itr[0]]}]{SymbolArray[itr[0]]}\t{line}[/{colorArray[itr[0]]}]"
+        )
 
     return None
 
@@ -462,7 +465,7 @@ def info(
     duckLogFilePath = join(path, ".duck/duck.log.json")
 
     if not exists(duckLogFilePath):
-        error("[ERROR] First init the repository using `python duck.py init`")
+        error(f"[ERROR] First init the repository using `{EXECUTABLE} init`")
 
     with open(duckLogFilePath, "r") as file:
         duckLogFile = load(file)
@@ -504,6 +507,74 @@ def info(
     return None
 
 
+@app.command()
+def status(
+    path: Annotated[str, Option(help="Path to the duck repository `.duck`")] = PATH,
+) -> None:
+    """
+    Compares the files in current version of repository with the files in the latest committed version.
+    """
+
+    duckLogFilePath = join(path, ".duck", LOG_FILE_NAME)
+
+    if not exists(duckLogFilePath):
+        error(f"[ERROR] First init the repository using `{EXECUTABLE} init`")
+
+    with open(duckLogFilePath, "r") as file:
+        duckLogFile = load(file)
+
+    head = duckLogFile[HEAD]
+    commitHead = duckLogFile[COMMITS][head]
+    thisFiles = [file for file in listdir(path) if isfile(join(path, file))]
+    headFiles = commitHead[FILES][NEW]
+    headFiles.extend([file for file in commitHead[FILES][CHANGES]])
+    itrFiles = set(thisFiles + headFiles)
+    newFiles = []
+    oldFiles = []
+    changedFiles = []
+
+    for file in itrFiles:
+        if file in thisFiles:
+            if file in headFiles:
+                with open(join(path, file)) as f:
+                    thisFileLines = f.readlines()
+                    fileChangeLog = getFileChangeLog(
+                        applyCommitToFile(file, head, path), thisFileLines
+                    )
+                    if len(fileChangeLog[ADD]) != 0 or len(fileChangeLog[DEL]) != 0:
+                        changedFiles.append(file)
+            else:
+                newFiles.append(file)
+        elif file in headFiles:
+            oldFiles.append(file)
+
+    if len(newFiles) == 0 and len(oldFiles) == 0 and len(changedFiles) == 0:
+        richPrint("[blue][COOKIE] Nothing to commit; everything up to date[/blue]")
+        return None
+
+    console = Console()
+
+    if len(newFiles) != 0:
+        newFilesTable = Table("Newly Added Files")
+        for file in newFiles:
+            newFilesTable.add_row(f"[red]{file}[/red]")
+        console.print(newFilesTable)
+    if len(oldFiles) != 0:
+        oldFilesTable = Table("Deleted Files")
+        for file in oldFiles:
+            oldFilesTable.add_row(f"[red]{file}[/red]")
+        console.print(oldFilesTable)
+    if len(changedFiles) != 0:
+        changedFileTable = Table("Changed Files")
+        for file in changedFiles:
+            changedFileTable.add_row(f"[red]{file}[/red]")
+        console.print(changedFileTable)
+    richPrint(
+        f"[magenta][INFO] Type `{EXECUTABLE} commit --help` for info on how to commit[/magenta]"
+    )
+    return None
+
+
 def error(message, info=True):
     """
     Prints error to the console
@@ -520,9 +591,9 @@ def error(message, info=True):
     1
     """
 
-    print(colored(message, "red"))
+    richPrint(f"[red]{message}[/red]")
     if info:
-        print(colored("[INFO] Do `python duck.py --help`", "magenta"))
+        richPrint(f"[magenta][INFO] Type `{EXECUTABLE} --help`[/magenta]")
     exit(1)
 
 
