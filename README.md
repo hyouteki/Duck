@@ -36,26 +36,24 @@ Duck is a [VCS](https://en.wikipedia.org/wiki/Version_control) built from scratc
             	|___ del
             	|___ add
 ```
-| name         | type         | description                                                                                                |
-| ------------ | ------------ | ---------------------------------------------------------------------------------------------------------- |
-| init         | subdirectory | initially commited files                                                                                   |
-| commits      | subdirectory | stores subdirectories which contain files that are either newly added or deleted in that particular commit |
-| head         | string       | SHA of the latest commit                                                                                   |
-| timeline     | linked list  | stores the sequence of commits (SHA)                                                                       |
-| SHA          | string       | SHA of that particular commit                                                                              |
-| message      | string       | commit message                                                                                             |
-| files        | JSON array   | logs of changes done in that commit                                                                        |
-| new          | array        |  list of newly added files                                                                                 |
-| old          | array        | list of deleted files                                                                                      |
-| changes      | json         |  logs of changes in existing files                                                                         |
-| del          | array        | list of deleted lines in that particular file                                                              |
-| add          | array        | list of newly added lines in that particular file                                                          |
+| name     | type         | description                                                                                                |
+| :------- | :----------- | :--------------------------------------------------------------------------------------------------------- |
+| init     | subdirectory | initially commited files                                                                                   |
+| commits  | subdirectory | stores subdirectories which contain files that are either newly added or deleted in that particular commit |
+| head     | string       | SHA of the latest commit                                                                                   |
+| timeline | linked list  | stores the sequence of commits (SHA)                                                                       |
+| SHA      | string       | SHA of that particular commit                                                                              |
+| message  | string       | commit message                                                                                             |
+| files    | JSON array   | logs of changes done in that commit                                                                        |
+| new      | array        | list of newly added files                                                                                  |
+| old      | array        | list of deleted files                                                                                      |
+| changes  | json         | logs of changes in existing files                                                                          |
+| del      | array        | list of deleted lines in that particular file                                                              |
+| add      | array        | list of newly added lines in that particular file                                                          |
 
 ## Requirements
 ``` console
-pip install typer
-pip install termcolor
-pip install inquirer
+pip install typer termcolor inquirer
 ```
 
 ## TODO: Add documentation
