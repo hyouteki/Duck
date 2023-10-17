@@ -3,13 +3,19 @@ from termcolor import colored
 from shutil import rmtree, copyfile
 from os import getcwd, mkdir, listdir
 from os.path import isfile, join, exists
-import typer
+from typer import Typer, Argument, Option
+from typing_extensions import Annotated
+from typing import Optional
 from inquirer import List as inquirerList, prompt as inquirerPrompt
+from rich import print as richPrint
+from rich.console import Console
+from rich.table import Table
+
 
 LOG_FILE_NAME = "duck.log.json"
 PATH = getcwd()
 LOG = dict()
-app = typer.Typer()
+app = Typer(rich_markup_mode="rich")
 
 # log constants
 HEAD = "head"
@@ -199,18 +205,17 @@ def applyCommitToFile(filename: str, commitSha: str, path: str = PATH) -> list:
 
 
 @app.command()
-def init(path: str = PATH, indent: bool = False) -> None:
-    """"""
+def init(
+    path: Annotated[str, Option(help="Path to the duck repository `.duck`")] = PATH,
+    indent: Annotated[
+        bool,
+        Option(
+            help="Flag indicating whether to indent the log file `.duck/duck.log.json`"
+        ),
+    ] = False,
+) -> None:
     """
-    Initializes the directory at the path `path` as the duck repository
-
-    PARAMETERS
-    ----------
-    - path : str
-        - path of the duck repository
-        - default = `PATH` = `getcwd()`
-    - indent : bool
-        - flag indicating whether to indent the log file `.duck/duck.log.json`
+    Initializes the directory at the path `path` as the duck repository.
     """
 
     if not exists(path):
@@ -264,20 +269,18 @@ def init(path: str = PATH, indent: bool = False) -> None:
 
 
 @app.command()
-def commit(message: str, path: str = PATH, indent: bool = False) -> None:
-    """"""
+def commit(
+    message: Annotated[str, Argument(help="Commit message")],
+    path: Annotated[str, Option(help="Path to the duck repository `.duck`")] = PATH,
+    indent: Annotated[
+        bool,
+        Option(
+            help="Flag indicating whether to indent the log file `.duck/duck.log.json`"
+        ),
+    ] = False,
+) -> None:
     """
-    Commits the current version of the directory at the path `path`
-
-    PARAMETERS
-    ----------
-    - message : str
-        - commit message
-    - path : str
-        - path of the duck repository
-        - default = `PATH` = `getcwd()`
-    - indent : bool
-        - flag indicating whether to indent the log file `.duck/duck.log.json`
+    Commits the current version of the directory at the path `path`.
     """
 
     # TODO(#2): Add support for not commiting if no changes are present
@@ -400,18 +403,12 @@ def rollback(commit_sha: str = "", path: str = PATH) -> None:
 
 
 @app.command()
-def diff(filename: str, path: str = PATH) -> None:
-    """"""
+def diff(
+    filename: Annotated[str, Argument(help="Name of the file")],
+    path: Annotated[str, Option(help="Path to the duck repository `.duck`")] = PATH,
+) -> None:
     """
-    Spits out the difference in the current version of the file with the latest \
-        commited version of the file
-
-    PARAMETERS
-    - filename : str
-        - name of the file
-    - path : str
-        - path of the duck repository
-        - default = `PATH` = `getcwd()`
+    Spits out the difference between the current file version with the latest committed version.
     """
 
     duckLogFilePath = join(path, ".duck", LOG_FILE_NAME)
@@ -454,36 +451,56 @@ def diff(filename: str, path: str = PATH) -> None:
 
 
 @app.command()
-def info(commit_sha: str, path: str = PATH) -> None:
-    """"""
+def info(
+    commit: Annotated[Optional[str], Argument(help="Commit sha")] = None,
+    path: Annotated[str, Option(help="Path to the duck repository `.duck`")] = PATH,
+) -> None:
     """
-    @desc\t
-        prints commit info to the console
-
-    @params\t
-        path: path of the duck repository
-        commit_sha: commit_sha
-
-    @return\t
-        None
+    Spits info of the mentioned commit to the console.
     """
 
-    log_file_path = join(path, ".duck/duck.log.json")
+    duckLogFilePath = join(path, ".duck/duck.log.json")
 
-    try:
-        with open(log_file_path, "r") as file:
-            pass
-    except:
-        error("ERROR: First init the repository using `python duck.py init`")
+    if not exists(duckLogFilePath):
+        error("[ERROR] First init the repository using `python duck.py init`")
 
-    with open(log_file_path, "r") as file:
-        log_file = load(file)
+    with open(duckLogFilePath, "r") as file:
+        duckLogFile = load(file)
 
-    if commit_sha not in log_file[COMMITS]:
+    if commit is None:
+        chosenCommit = [
+            inquirerList(
+                "commit",
+                message="Select commit for more information",
+                choices=duckLogFile[TIMELINE],
+            ),
+        ]
+        answer = inquirerPrompt(chosenCommit)
+        commit = answer["commit"]
+
+    if commit not in duckLogFile[COMMITS]:
         error("Not a valid commit SHA")
 
-    # TODO(#4): Complete INFO command
+    commitDict = duckLogFile[COMMITS][commit]
 
+    console = Console()
+
+    richPrint(f"Message: [blue]{commitDict['message']}[/blue]")
+    newFilesTable = Table("Newly added files")
+    for file in commitDict[FILES][NEW]:
+        newFilesTable.add_row(file)
+    console.print(newFilesTable)
+    oldFilesTable = Table("Deleted files")
+    for file in commitDict[FILES][OLD]:
+        oldFilesTable.add_row(file)
+    console.print(oldFilesTable)
+    changedFileTable = Table("Files", "Changes")
+    for file in commitDict[FILES][CHANGES]:
+        changedFileTable.add_row(
+            file,
+            f"[[red]{len(commitDict[FILES][CHANGES][file][DEL])}[/red], [green]{len(commitDict[FILES][CHANGES][file][ADD])}[/green]]",
+        )
+    console.print(changedFileTable)
     return None
 
 
