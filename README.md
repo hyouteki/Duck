@@ -8,8 +8,7 @@ Duck is a [VCS](https://en.wikipedia.org/wiki/Version_control) built from scratc
 - [x] diff
 - [x] info
 - [x] status
-- [ ] unit test
-- [ ] rollback 
+- [x] rollback 
 - [ ] compression & decompression in files
 - [ ] making timeline a tree structure
 - [ ] branching

@@ -185,7 +185,7 @@ def applyCommitToFile(filename: str, commitSha: str, path: str = PATH) -> list:
             break
 
     if not exists(join(path, filename)):
-        error(f"[ERROR] {filename} does not exist in any commit", info=False)
+        error(f"[ERROR]\t{filename} does not exist in any commit", info=False)
 
     with open(join(duckDirPath, COMMITS, timeline[firstCommitIndex], filename)) as file:
         lines = file.readlines()
@@ -219,7 +219,7 @@ def init(
     """
 
     if not exists(path):
-        error("[ERROR] Invalid path found", info=False)
+        error("[ERROR]\tInvalid path found", info=False)
     duckDirPath = join(path, ".duck")
     try:
         # deletes the ./duck dir if any
@@ -262,7 +262,7 @@ def init(
             fileCount += 1
 
     richPrint(
-        f"[blue][COOKIE] Initialized {fileCount} files in directory `{path}`[/blue]"
+        f"[blue][COOKIE]\tInitialized {fileCount} files in directory `{path}`[/blue]"
     )
 
     return None
@@ -288,7 +288,7 @@ def commit(
     duckLogFilePath = join(duckDirPath, LOG_FILE_NAME)
 
     if not exists(duckLogFilePath):
-        error(f"[ERROR] First init the repository using `{EXECUTABLE} init`")
+        error(f"[ERROR]\tFirst init the repository using `{EXECUTABLE} init`")
 
     with open(duckLogFilePath, "r") as file:
         duckLogFile = load(file)
@@ -316,9 +316,11 @@ def commit(
             if file in headFiles:
                 with open(join(path, file)) as f:
                     thisFileLines = f.readlines()
-                    changeFiles[file] = getFileChangeLog(
+                    fileChangeLog = getFileChangeLog(
                         applyCommitToFile(file, head, path), thisFileLines
                     )
+                    if fileChangeLog[ADD] != 0 or fileChangeLog[DEL] != 0:
+                        changeFiles[file] = fileChangeLog
             else:
                 newFiles.append(file)
                 originalPath = join(path, file)
@@ -347,7 +349,7 @@ def commit(
     commitTable.add_row("Committed in directory", path)
     commitTable.add_row(
         "Changed [Deleted, Added, Updated] files",
-        f"[[red]{len(oldFiles)}[/red], [green]{len(newFiles)}[/green], [yellow]{len(thisFiles) - len(oldFiles) - len(newFiles)}[/yellow]",
+        f"[[red]{len(oldFiles)}[/red], [green]{len(newFiles)}[/green], [yellow]{len(thisFiles) - len(oldFiles) - len(newFiles)}[/yellow]]",
     )
     console.print(commitTable)
 
@@ -355,50 +357,77 @@ def commit(
 
 
 @app.command()
-def rollback(commit_sha: str = "", path: str = PATH) -> None:
-    """"""
+def rollback(
+    commit: Annotated[Optional[str], Argument(help="Commit sha")] = None,
+    path: Annotated[str, Option(help="Path to the duck repository `.duck`")] = PATH,
+    indent: Annotated[
+        bool,
+        Option(
+            help="Flag indicating whether to indent the log file `.duck/duck.log.json`"
+        ),
+    ] = False,
+) -> None:
     """
-    @desc\t
-        rollsback to the version of the directory during a particular commit
-
-    @params\t
-        commit_sha: sha of the commit
-        path: path of the duck repository
-        indent: should indent the log file `.duck/duck.log.json`
-
-    @return\t
-        None
+    Rolls back to the version of the directory during a particular commit and deletes everything after that commit.
     """
+    duckLogFilePath = join(path, ".duck/duck.log.json")
 
-    # TODO(#3): Complete rollback command
+    if not exists(duckLogFilePath):
+        error(f"[ERROR]\tFirst init the repository using `{EXECUTABLE} init`")
 
-    duck_dir_path = join(path, ".duck")
-    log_file_path = join(duck_dir_path, LOG_FILE_NAME)
-    commits_dir_path = join(duck_dir_path, COMMITS)
+    with open(duckLogFilePath, "r") as file:
+        duckLogFile = load(file)
 
-    try:
-        with open(log_file_path, "r") as file:
-            pass
-    except:
-        error(f"ERROR: First init the repository using `{EXECUTABLE} init`")
-
-    with open(log_file_path, "r") as file:
-        log_file = load(file)
-    all_commits = log_file[COMMITS]
-
-    if commit_sha == "":
-        commits = [
+    if commit is None:
+        chosenCommit = [
             inquirerList(
                 "commit",
-                message="Select commit for info",
-                choices=log_file[TIMELINE],
+                message="Select commit for more information",
+                choices=duckLogFile[TIMELINE],
             ),
         ]
-        answers = inquirerPrompt(commits)
-        commit_sha = answers["commit"]
-    elif commit_sha not in log_file[TIMELINE]:
-        error("ERROR: Not a valid commit SHA", info=False)
-    this_commit_files = log_file[COMMITS][commit_sha]
+        answer = inquirerPrompt(chosenCommit)
+        commit = answer["commit"]
+
+    if commit not in duckLogFile[COMMITS]:
+        error("Not a valid commit SHA", info=False)
+
+    commitDict = duckLogFile[COMMITS][commit]
+
+    for file in listdir(path):
+        if file != ".duck":
+            try:
+                rmtree(join(path, file), ignore_errors=False, onerror=None)
+            except:
+                pass
+
+    for file in commitDict[FILES][NEW]:
+        originalPath = join(path, ".duck", COMMITS, commit, file)
+        copiedPath = join(path, file)
+        copyfile(originalPath, copiedPath)
+
+    for file in commitDict[FILES][CHANGES]:
+        with open(join(path, file), "w") as outputFile:
+            outputFile.writelines(applyCommitToFile(file, commit, path))
+
+    duckLogFile[HEAD] = commit
+    persistentCommits = duckLogFile[TIMELINE][: duckLogFile[TIMELINE].index(commit) + 1]
+    deletableCommits = duckLogFile[TIMELINE][duckLogFile[TIMELINE].index(commit) + 1 :]
+    duckLogFile[TIMELINE] = persistentCommits
+    commitsDict = dict()
+    for itr in duckLogFile[TIMELINE]:
+        commitsDict[itr] = duckLogFile[COMMITS][itr]
+    duckLogFile[COMMITS] = commitsDict
+    for itr in deletableCommits:
+        try:
+            rmtree(join(path, ".duck", COMMITS, itr), ignore_errors=False, onerror=None)
+        except:
+            pass
+
+    with open(join(path, ".duck", LOG_FILE_NAME), "w") as log:
+        dump(duckLogFile, log, indent=4 if indent else 0)
+
+    richPrint(f"[blue][COOKIE]\tSuccessfully rolled back to commit `{commit}` [/blue]")
 
     return None
 
@@ -407,21 +436,26 @@ def rollback(commit_sha: str = "", path: str = PATH) -> None:
 def diff(
     filename: Annotated[str, Argument(help="Name of the file")],
     path: Annotated[str, Option(help="Path to the duck repository `.duck`")] = PATH,
+    number: Annotated[
+        bool, Option(help="Flag indicating whether to show line numbers or not")
+    ] = False,
 ) -> None:
     """
     Spits out the difference between the current file version with the latest committed version.
     """
 
+    # TODO(#4): Add parameter commit which can help compare current file with that commited version.
+
     duckLogFilePath = join(path, ".duck", LOG_FILE_NAME)
 
     if not exists(duckLogFilePath):
-        error(f"[ERROR] First init the repository using `{EXECUTABLE} init`")
+        error(f"[ERROR]\tFirst init the repository using `{EXECUTABLE} init`")
 
     with open(duckLogFilePath, "r") as file:
         duckLogFile = load(file)
 
     if not exists(join(path, filename)):
-        error(f"[ERROR] {filename} does not exist", info=False)
+        error(f"[ERROR]\t{filename} does not exist", info=False)
 
     with open(join(path, filename)) as file:
         curFileLines = file.readlines()
@@ -444,10 +478,10 @@ def diff(
     for itr in fileChangeLog[ADD]:
         out.insert(itr, (addColor, fileChangeLog[ADD][itr]))
 
-    for itr in out:
+    for i, itr in enumerate(out):
         line = itr[1].rstrip("\n")
         richPrint(
-            f"[{colorArray[itr[0]]}]{SymbolArray[itr[0]]}\t{line}[/{colorArray[itr[0]]}]"
+            f"[{colorArray[itr[0]]}]{SymbolArray[itr[0]]}{ f' {i}' if number else ''}\t{line}[/{colorArray[itr[0]]}]"
         )
 
     return None
@@ -465,7 +499,7 @@ def info(
     duckLogFilePath = join(path, ".duck/duck.log.json")
 
     if not exists(duckLogFilePath):
-        error(f"[ERROR] First init the repository using `{EXECUTABLE} init`")
+        error(f"[ERROR]\tFirst init the repository using `{EXECUTABLE} init`")
 
     with open(duckLogFilePath, "r") as file:
         duckLogFile = load(file)
@@ -482,7 +516,7 @@ def info(
         commit = answer["commit"]
 
     if commit not in duckLogFile[COMMITS]:
-        error("Not a valid commit SHA")
+        error("Not a valid commit SHA", info=False)
 
     commitDict = duckLogFile[COMMITS][commit]
 
@@ -499,6 +533,11 @@ def info(
     console.print(oldFilesTable)
     changedFileTable = Table("Files", "Changes")
     for file in commitDict[FILES][CHANGES]:
+        if (
+            len(commitDict[FILES][CHANGES][file][DEL]) == 0
+            and len(commitDict[FILES][CHANGES][file][ADD]) == 0
+        ):
+            continue
         changedFileTable.add_row(
             file,
             f"[[red]{len(commitDict[FILES][CHANGES][file][DEL])}[/red], [green]{len(commitDict[FILES][CHANGES][file][ADD])}[/green]]",
@@ -518,7 +557,7 @@ def status(
     duckLogFilePath = join(path, ".duck", LOG_FILE_NAME)
 
     if not exists(duckLogFilePath):
-        error(f"[ERROR] First init the repository using `{EXECUTABLE} init`")
+        error(f"[ERROR]\tFirst init the repository using `{EXECUTABLE} init`")
 
     with open(duckLogFilePath, "r") as file:
         duckLogFile = load(file)
@@ -549,7 +588,7 @@ def status(
             oldFiles.append(file)
 
     if len(newFiles) == 0 and len(oldFiles) == 0 and len(changedFiles) == 0:
-        richPrint("[blue][COOKIE] Nothing to commit; everything up to date[/blue]")
+        richPrint("[blue][COOKIE]\tNothing to commit; everything up to date[/blue]")
         return None
 
     console = Console()
@@ -570,7 +609,7 @@ def status(
             changedFileTable.add_row(f"[red]{file}[/red]")
         console.print(changedFileTable)
     richPrint(
-        f"[magenta][INFO] Type `{EXECUTABLE} commit --help` for info on how to commit[/magenta]"
+        f"[magenta][INFO]\tType `{EXECUTABLE} commit --help` for info on how to commit[/magenta]"
     )
     return None
 
@@ -593,7 +632,7 @@ def error(message, info=True):
 
     richPrint(f"[red]{message}[/red]")
     if info:
-        richPrint(f"[magenta][INFO] Type `{EXECUTABLE} --help`[/magenta]")
+        richPrint(f"[magenta][INFO]\tType `{EXECUTABLE} --help`[/magenta]")
     exit(1)
 
 

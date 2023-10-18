@@ -1,70 +1,19 @@
 {
-    "head": "commit-2",
-    "timeline": [
-        "commit-init",
-        "commit-1",
-        "commit-2"
-    ],
-    "commits": {
-        "commit-init": {
-            "files": {
-                "new": [
-                    "original.txt",
-                    "testadd.txt"
-                ],
-                "old": [],
-                "changes": {}
-            },
-            "message": "initial commit"
-        },
-        "commit-1": {
-            "message": "commit test",
-            "files": {
-                "new": [
-                    "testadd.txt",
-                    "original.txt"
-                ],
-                "old": [],
-                "changes": {
-                    "testadd.txt": {
-                        "del": {
-                            "3": "rolahh\n",
-                            "4": "\n",
-                            "5": "temp hell\n"
-                        },
-                        "add": {
-                            "3": "rola"
-                        }
-                    },
-                    "original.txt": {
-                        "del": {},
-                        "add": {}
-                    }
-                }
-            }
-        },
-        "commit-2": {
-            "message": "done something useless",
-            "files": {
-                "new": [],
-                "old": [],
-                "changes": {
-                    "original.txt": {
-                        "del": {},
-                        "add": {}
-                    },
-                    "testadd.txt": {
-                        "del": {
-                            "2": "yt\n",
-                            "3": "rola"
-                        },
-                        "add": {
-                            "2": "ytvkjk \n",
-                            "3": "eew  "
-                        }
-                    }
-                }
-            }
-        }
-    }
+"head": "commit-init",
+"timeline": [
+"commit-init"
+],
+"commits": {
+"commit-init": {
+"files": {
+"new": [
+"original.txt",
+"testadd.txt"
+],
+"old": [],
+"changes": {}
+},
+"message": "initial commit"
+}
+}
 }
