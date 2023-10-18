@@ -14,7 +14,7 @@ Duck is a [VCS](https://en.wikipedia.org/wiki/Version_control) built from scratc
 - [ ] branching
 - [ ] merging between branches
 - [ ] recursive handling of subdirectories
-- [ ] executable/python module integration
+- [ ] [python package](https://typer.tiangolo.com/tutorial/package/)
 - [ ] TODOs and ISSUEs
 
 ## Duck log structure
