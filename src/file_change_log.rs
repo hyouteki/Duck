@@ -1,24 +1,38 @@
 use std::collections::HashMap;
 use core::cmp::max;
+use serde::{Deserialize, Serialize};
 
-pub struct FileChangeLog {
+pub struct FileDiffLog {
 	pub add: HashMap<i32, String>,
 	pub com: Vec<String>,
 	pub del: HashMap<i32, String>,
 }
 
-impl FileChangeLog {
+impl FileDiffLog {
 	fn new(
 		add: HashMap<i32, String>,
 		com: Vec<String>,
 		del: HashMap<i32, String>
-	) -> Self {FileChangeLog{add: add, com: com, del: del}}
+	) -> Self {FileDiffLog{add: add, com: com, del: del}}
 }
 
-pub fn get_file_change_log(
+#[derive(Serialize, Deserialize)]
+pub struct FileChangeLog {
+	pub add: HashMap<i32, String>,
+	pub del: HashMap<i32, String>,
+}
+
+impl FileChangeLog {
+	fn from_diff(diff: FileDiffLog) -> Self {
+		FileChangeLog{add: diff.add, del: diff.del}
+	}
+}
+
+
+pub fn get_file_diff_log(
 	old_file_lines: Vec<String>,
 	new_file_lines: Vec<String>
-) -> FileChangeLog {
+) -> FileDiffLog {
 	let (old_len, new_len) = (old_file_lines.len(), new_file_lines.len());
 
 	// finding longest common subsequence
@@ -67,5 +81,12 @@ pub fn get_file_change_log(
 		}
 	}
 	
-	FileChangeLog::new(add, com, del)
+	FileDiffLog::new(add, com, del)
+}
+
+pub fn get_file_change_log(
+	old_file_lines: Vec<String>,
+	new_file_lines: Vec<String>
+) -> FileChangeLog {
+	FileChangeLog::from_diff(get_file_diff_log(old_file_lines, new_file_lines))
 }
